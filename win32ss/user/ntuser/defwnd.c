@@ -781,6 +781,89 @@ IntDefWindowProc(
                co_IntSendMessage(UserHMGetHandle(Wnd), WM_CONTEXTMENU, (WPARAM)UserHMGetHandle(Wnd), MAKELPARAM(-1, -1));
             }
          }
+         if (IS_KEY_DOWN(gafAsyncKeyState, VK_LWIN) || IS_KEY_DOWN(gafAsyncKeyState, VK_RWIN))
+         {
+            PWND topWnd = UserGetWindowObject(UserGetForegroundWindow());
+            
+            if (topWnd)
+            {
+               if (wParam == VK_DOWN)
+               {
+                  co_IntSendMessage(UserHMGetHandle(topWnd), WM_SYSCOMMAND, (topWnd->style & WS_MAXIMIZE) ? SC_RESTORE : SC_MINIMIZE, lParam);
+               }    
+               else
+               if (wParam == VK_UP)
+               {
+                  RECT currentRect = topWnd->InternalPos.NormalRect.right == 0 
+                                       ? topWnd->rcWindow 
+                                       : topWnd->InternalPos.NormalRect;
+                  co_IntSendMessage(UserHMGetHandle(topWnd), WM_SYSCOMMAND, SC_MAXIMIZE, lParam);
+                  
+                  // save normal rect if maximazing snapped window
+                  topWnd->InternalPos.NormalRect = currentRect;
+               }
+               else
+               if (wParam == VK_LEFT || wParam == VK_RIGHT)
+               {
+                  RECT mouseRect;
+                  RECT normalRect;
+                  RECT windowRect = topWnd->rcWindow;
+                  BOOL snapped = FALSE;
+                  UserSystemParametersInfo(SPI_GETWORKAREA, 0, &mouseRect, 0);
+                  normalRect = topWnd->InternalPos.NormalRect;
+
+                  if (topWnd->style & WS_MAXIMIZE)
+                  {
+                     co_IntSendMessage(UserHMGetHandle(topWnd), WM_SYSCOMMAND, SC_RESTORE, lParam);
+                  }
+                  else
+                  {
+                     snapped = (normalRect.left != 0 &&
+                                normalRect.right != 0 &&
+                                normalRect.top != 0 &&
+                                normalRect.bottom != 0);
+                  }
+
+                  if (wParam == VK_LEFT)
+                  {
+                     mouseRect.right = (mouseRect.right - mouseRect.left) / 2 + mouseRect.left;
+                  }
+                  else // VK_RIGHT
+                  {
+                     mouseRect.left = (mouseRect.right - mouseRect.left) / 2 + 1 + mouseRect.left;
+                  }
+
+                  if (snapped)
+                  {
+                     // if window was snapped but moved to other location - restore normal size
+                     if (mouseRect.left != windowRect.left ||
+                         mouseRect.right != windowRect.right ||
+                         mouseRect.top != windowRect.top ||
+                         mouseRect.bottom != windowRect.bottom)
+                     {
+                        RECT zero = {0, 0, 0, 0};
+                        mouseRect = normalRect;
+                        topWnd->InternalPos.NormalRect = zero;
+                     }
+                  }
+                  else
+                  {
+                     normalRect = windowRect;
+                  }
+                  
+                  co_WinPosSetWindowPos(topWnd,
+                                        0,
+                                        mouseRect.left,
+                                        mouseRect.top,
+                                        mouseRect.right - mouseRect.left,
+                                        mouseRect.bottom - mouseRect.top,
+                                        0);
+
+                  if (!snapped)
+                     topWnd->InternalPos.NormalRect = normalRect;
+               }
+            }
+         }
          break;
 
       case WM_SYSKEYDOWN:
