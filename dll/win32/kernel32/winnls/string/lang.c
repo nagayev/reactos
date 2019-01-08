@@ -56,7 +56,7 @@ static const WCHAR szLangGroupsKeyName[] = {
     'L','a','n','g','u','a','g','e',' ','G','r','o','u','p','s',0
 };
 
-#if (WINVER >= 0x0600)
+#ifdef __REACTOS__
 /* Charset to codepage map, sorted by name. */
 static const struct charset_entry
 {
@@ -262,7 +262,7 @@ static inline UINT get_lcid_codepage( LCID lcid )
     return ret;
 }
 
-#if (WINVER >= 0x0600)
+#if (WINVER >= 0x0499)
 /***********************************************************************
  *              charset_cmp (internal)
  */
@@ -827,7 +827,7 @@ LANGID WINAPI GetSystemDefaultUILanguage(void)
     return lang;
 }
 
-#if (WINVER >= 0x0600)
+#if (WINVER >= 0x0499)
 /***********************************************************************
  *           LocaleNameToLCID  (KERNEL32.@)
  */
@@ -1339,6 +1339,39 @@ BOOL WINAPI SetLocaleInfoA(LCID lcid, LCTYPE lctype, LPCSTR data)
     return ret;
 }
 
+#if (WINVER >= 0x0499)
+WINBASEAPI
+int
+WINAPI
+GetLocaleInfoEx(
+  _In_opt_ LPCWSTR lpLocaleName,
+  _In_ LCTYPE LCType,
+  _Out_writes_opt_(cchData) LPWSTR lpLCData,
+  _In_ int cchData)
+{
+    TRACE( "GetLocaleInfoEx not implemented (lcid=%s,lctype=0x%x,%s,%d)\n", debugstr_w(lpLocaleName), LCType, debugstr_w(lpLCData), cchData );
+    return 0;
+}
+ BOOL 
+WINAPI
+IsValidLocaleName(
+  LPCWSTR lpLocaleName
+)
+{
+    TRACE( "IsValidLocaleName not implemented (lpLocaleName=%s)\n", debugstr_w(lpLocaleName));
+    return TRUE;
+}
+ INT 
+WINAPI
+GetUserDefaultLocaleName(
+  LPWSTR lpLocaleName,
+  INT    cchLocaleName
+)
+{
+    TRACE( "GetUserDefaultLocaleName not implemented (lpLocaleName=%s, cchLocaleName=%d)\n", debugstr_w(lpLocaleName), cchLocaleName);
+    return 0;
+}
+#endif
 
 /******************************************************************************
  *		SetLocaleInfoW	(KERNEL32.@)

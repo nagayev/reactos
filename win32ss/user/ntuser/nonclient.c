@@ -391,10 +391,50 @@ DefWndDoSizeMove(PWND pwnd, WORD wParam)
       if (!co_IntGetPeekMessage(&msg, 0, 0, 0, PM_REMOVE, TRUE)) break;
       if (IntCallMsgFilter( &msg, MSGF_SIZE )) continue;
 
+      // check for snapping if moved by caption
+      if (msg.message == WM_LBUTTONUP)
+      {
+        if (hittest == HTCAPTION)
+        {
+            RECT mouseRect2;
+            RECT normas = pwnd->rcWindow;
+            UserSystemParametersInfo(SPI_GETWORKAREA, 0, &mouseRect2, 0);
+
+            // snap to left
+            if (pt.x <= mouseRect2.left)
+            {
+                mouseRect2.right = (mouseRect2.right - mouseRect2.left) / 2 + mouseRect2.left;
+
+                co_WinPosSetWindowPos( pwnd,
+                                   0,
+                                   mouseRect2.left,
+                                   mouseRect2.top,
+                                   mouseRect2.right - mouseRect2.left,
+                                   mouseRect2.bottom - mouseRect2.top,
+                                   0 );
+                pwnd->InternalPos.NormalRect = normas;
+            }
+            // snap to right
+            if (pt.x >= mouseRect2.right-1)
+            {
+                mouseRect2.left = (mouseRect2.right - mouseRect2.left) / 2 + 1 + mouseRect2.left;
+
+                co_WinPosSetWindowPos( pwnd,
+                                       0,
+                                       mouseRect2.left,
+                                       mouseRect2.top,
+                                       mouseRect2.right - mouseRect2.left,
+                                       mouseRect2.bottom - mouseRect2.top,
+                                       0 );
+                pwnd->InternalPos.NormalRect = normas;
+            }
+        }
+        break;
+      }
+      
       /* Exit on button-up, Return, or Esc */
-      if ((msg.message == WM_LBUTTONUP) ||
-	  ((msg.message == WM_KEYDOWN) &&
-	   ((msg.wParam == VK_RETURN) || (msg.wParam == VK_ESCAPE)))) break;
+      if (msg.message == WM_KEYDOWN &&
+          (msg.wParam == VK_RETURN || msg.wParam == VK_ESCAPE)) break;
 
       if ((msg.message != WM_KEYDOWN) && (msg.message != WM_MOUSEMOVE))
       {
@@ -1561,6 +1601,21 @@ NC_HandleNCLButtonDblClk(PWND pWnd, WPARAM wParam, LPARAM lParam)
           break;
 
       co_IntSendMessage(UserHMGetHandle(pWnd), WM_SYSCOMMAND, SC_CLOSE, lParam);
+      break;
+    }
+    case HTTOP:
+    case HTBOTTOM:
+    {
+      RECT sizingRect = pWnd->rcWindow, mouseRect;
+      UserSystemParametersInfo(SPI_GETWORKAREA, 0, &mouseRect, 0);
+        
+      co_WinPosSetWindowPos(pWnd,
+                            0,
+                            sizingRect.left,
+                            mouseRect.top,
+                            sizingRect.right - sizingRect.left,
+                            mouseRect.bottom - mouseRect.top,
+                            0);
       break;
     }
     default:

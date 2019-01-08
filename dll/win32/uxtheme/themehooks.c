@@ -374,6 +374,14 @@ ThemePreWindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam, ULONG_PTR 
                 return 0;
             pwndData->DirtyThemeRegion = TRUE;
         }
+        case WM_KEYDOWN:
+        {
+            if (((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x8000) &&
+                (wParam == VK_UP || wParam == VK_DOWN || wParam == VK_LEFT || wParam == VK_RIGHT))
+            {
+                return DefWindowProcW(hWnd, Msg, wParam, lParam);
+            }
+        }
     }
 
     return 0;
@@ -647,6 +655,8 @@ ThemeInitApiHook(UAPIHK State, PUSERAPIHOOK puah)
     UAH_HOOK_MESSAGE(puah->WndProcArray, WM_THEMECHANGED);
     UAH_HOOK_MESSAGE(puah->WndProcArray, WM_UAHINIT);
 
+    UAH_HOOK_MESSAGE(puah->WndProcArray, WM_KEYDOWN);
+    
     puah->DlgProcArray.MsgBitArray = gabDLGPmessages;
     puah->DlgProcArray.Size = UAHOWP_MAX_SIZE;
 
